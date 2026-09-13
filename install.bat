@@ -8,20 +8,32 @@ echo  INSTALASI KOPITOPSIS - FLASK DAN MYSQL
 echo ============================================================
 echo.
 
-where python >nul 2>nul
+set "PYTHON_PATH_FILE=%TEMP%\kopitopsis_python_%RANDOM%.txt"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\ensure_python.ps1" -OutputFile "%PYTHON_PATH_FILE%" -MinimumMajor 3 -MinimumMinor 12
 if errorlevel 1 (
-    echo [GAGAL] Python tidak ditemukan pada PATH.
-    echo Instal Python 3.12 atau lebih baru, lalu jalankan kembali file ini.
+    echo [GAGAL] Python yang kompatibel tidak dapat disiapkan.
+    if exist "%PYTHON_PATH_FILE%" del /q "%PYTHON_PATH_FILE%"
     pause
     exit /b 1
 )
+set /p "PYTHON_EXE="<"%PYTHON_PATH_FILE%"
+del /q "%PYTHON_PATH_FILE%"
+if not defined PYTHON_EXE goto :failed
 
-for /f "tokens=2" %%V in ('python --version 2^>^&1') do set "PYTHON_VERSION=%%V"
-echo [OK] Python %PYTHON_VERSION% ditemukan.
+echo [OK] Python kompatibel: %PYTHON_EXE%
+
+if exist ".venv\Scripts\python.exe" (
+    ".venv\Scripts\python.exe" -c "import sys; raise SystemExit(0 if sys.version_info.major == 3 and sys.version_info.minor >= 12 else 1)"
+    if errorlevel 1 (
+        echo [INFO] Virtual environment lama menggunakan Python yang tidak kompatibel.
+        echo [INFO] Membuat ulang .venv dengan Python yang sesuai ...
+        rmdir /s /q ".venv"
+    )
+)
 
 if not exist ".venv\Scripts\python.exe" (
     echo [1/7] Membuat virtual environment .venv ...
-    python -m venv .venv
+    "%PYTHON_EXE%" -m venv .venv
     if errorlevel 1 goto :failed
 ) else (
     echo [1/7] Virtual environment sudah tersedia.
