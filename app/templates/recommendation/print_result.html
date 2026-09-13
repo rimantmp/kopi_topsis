@@ -1,0 +1,44 @@
+<div class="print-toolbar no-print"><a class="button secondary" href="{{ url_for('recommendation.result', session_id=session.id) }}"><i data-lucide="arrow-left"></i>Kembali</a><button class="button" type="button" onclick="window.print()"><i data-lucide="printer"></i>Cetak / Simpan PDF</button></div>
+
+<article class="print-report">
+  <header class="report-header">
+    <div class="report-brand"><div class="report-mark">K</div><div><strong>KopiTopsis</strong><span>Sistem Pendukung Keputusan Metode TOPSIS</span></div></div>
+    <div class="report-document"><strong>LAPORAN HASIL REKOMENDASI</strong><span>Varietas Kopi Arabika di Tana Toraja</span></div>
+  </header>
+
+  <section class="report-meta">
+    <div><span>ID Sesi</span><strong>{{ session.id }}</strong></div><div><span>Tanggal Proses</span><strong>{{ session.created_at.strftime('%d/%m/%Y %H:%M') }}</strong></div><div><span>Pengguna</span><strong>{{ session.user.name }}</strong></div><div><span>Lokasi</span><strong>{{ session.location_name or 'Tidak dicantumkan' }}</strong></div><div><span>Versi Model</span><strong>{{ session.model_version }}</strong></div><div><span>Status</span><strong>{{ session.status|title }}</strong></div>
+  </section>
+
+  <section class="report-winner">
+    <div><span>REKOMENDASI PERINGKAT PERTAMA</span><h1>{{ results[0].variety.name }}</h1><p>{{ results[0].variety.code }}</p></div>
+    <div class="winner-score"><strong>{{ '%.6f'|format(results[0].preference_score|float) }}</strong><span>Nilai Preferensi</span></div>
+  </section>
+
+  <section class="report-section">
+    <h2>1. Input Kondisi</h2>
+    <table class="report-table"><thead><tr><th>Kode</th><th>Kriteria</th><th>Kondisi/Standar yang Dipilih</th><th>Skor</th></tr></thead><tbody>{% for row in session.inputs|sort(attribute='criterion.display_order') %}<tr><td>{{ row.criterion.code }}</td><td>{{ row.criterion.name }}</td><td>{{ row.mapping_snapshot.get('name', '') }} — {{ row.raw_value }}</td><td class="number">{{ row.mapped_score|float|round(2) }}</td></tr>{% endfor %}</tbody></table>
+  </section>
+
+  <section class="report-section">
+    <h2>2. Bobot dan Atribut Kriteria</h2>
+    <table class="report-table"><thead><tr><th>Kode</th><th>Kriteria</th><th>Atribut</th><th>Bobot</th></tr></thead><tbody>{% for criterion in session.criteria_snapshot %}<tr><td>{{ criterion.code }}</td><td>{{ criterion.name }}</td><td>{{ criterion.attribute|title }}</td><td class="number">{{ '%.2f'|format(criterion.weight * 100) }}%</td></tr>{% endfor %}<tr class="total-row"><td colspan="3">Total</td><td class="number">100.00%</td></tr></tbody></table>
+  </section>
+
+  <section class="report-section page-break-avoid">
+    <h2>3. Ranking Hasil TOPSIS</h2>
+    <table class="report-table ranking-print-table"><thead><tr><th>Peringkat</th><th>Kode</th><th>Varietas</th><th>D+</th><th>D−</th><th>Nilai Preferensi</th></tr></thead><tbody>{% for row in results %}<tr class="{% if loop.first %}winner-row{% endif %}"><td class="number">{{ row.rank_no }}</td><td>{{ row.variety.code }}</td><td><strong>{{ row.variety.name }}</strong></td><td class="number">{{ '%.6f'|format(row.distance_positive|float) }}</td><td class="number">{{ '%.6f'|format(row.distance_negative|float) }}</td><td class="number"><strong>{{ '%.6f'|format(row.preference_score|float) }}</strong></td></tr>{% endfor %}</tbody></table>
+  </section>
+
+  {% set calc = session.calculation %}
+  <section class="report-section page-break-avoid">
+    <h2>4. Solusi Ideal</h2>
+    <table class="report-table"><thead><tr><th>Solusi</th>{% for criterion in session.criteria_snapshot %}<th>{{ criterion.code }}</th>{% endfor %}</tr></thead><tbody><tr><td>Ideal Positif (A+)</td>{% for value in calc.positive_ideal %}<td class="number">{{ '%.6f'|format(value) }}</td>{% endfor %}</tr><tr><td>Ideal Negatif (A−)</td>{% for value in calc.negative_ideal %}<td class="number">{{ '%.6f'|format(value) }}</td>{% endfor %}</tr></tbody></table>
+  </section>
+
+  <section class="report-note"><strong>Catatan interpretasi</strong><p>Ranking dihasilkan oleh metode TOPSIS berdasarkan nilai alternatif, bobot, dan atribut yang tersimpan pada sesi ini. Nilai preferensi merupakan nilai relatif antaralternatif, bukan persentase keberhasilan budidaya. Hasil perlu dipertimbangkan bersama verifikasi lapangan dan pendapat pakar.</p></section>
+
+  <section class="signature-area"><div><p>Mengetahui,</p><div class="signature-space"></div><span>(................................................)</span><small>Administrator/Pengelola</small></div><div><p>Tana Toraja, ........................</p><div class="signature-space"></div><span>(................................................)</span><small>Petugas/Pengguna</small></div></section>
+
+  <footer class="report-footer"><span>Dicetak dari KopiTopsis</span><span>ID {{ session.id[:8] }} · {{ session.model_version }}</span></footer>
+</article>

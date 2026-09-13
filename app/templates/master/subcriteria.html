@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% block title %}Subkriteria · KopiTopsis{% endblock %}
+{% block page_title %}Master Subkriteria{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Subkriteria</h1>
+    <p class="muted">Kelola kategori, rentang teknis, dan skor penilaian.</p>
+  </div>
+  <button class="button" type="button" id="openSubcriterionModal">
+    <i data-lucide="plus"></i>Tambah Subkriteria
+  </button>
+</div>
+
+<section class="card">
+  <div class="table-toolbar">
+    <div>
+      <h2>Daftar Subkriteria</h2>
+      <p class="muted small">Klik kriteria untuk melihat rincian subkriteria.</p>
+    </div>
+    <div class="search-box">
+      <i data-lucide="search"></i>
+      <input id="subcriteriaSearch" type="search" placeholder="Cari kriteria atau subkriteria…" aria-label="Cari subkriteria">
+    </div>
+  </div>
+
+  <div class="accordion-table" id="subcriteriaGroups">
+    {% for c in criteria %}
+    {% set group = items|selectattr('criterion_id', 'equalto', c.id)|list %}
+    <details class="criterion-accordion" data-search="{{ c.code }} {{ c.name }} {% for x in group %}{{ x.name }} {{ x.technical_range }} {% endfor %}">
+      <summary>
+        <span class="criterion-code">{{ c.code }}</span>
+        <span class="accordion-name">
+          <strong>{{ c.name }}</strong>
+          <small>{{ group|length }} subkriteria{% if c.unit %} · {{ c.unit }}{% endif %}</small>
+        </span>
+        <span class="badge">Bobot {{ '%.0f'|format(c.weight|float * 100) }}%</span>
+        <i class="chevron" data-lucide="chevron-down"></i>
+      </summary>
+
+      <div class="accordion-content">
+        {% if group %}
+        <div class="table-wrap flat-table">
+          <table>
+            <thead>
+              <tr><th style="width:70px">Skor</th><th>Nama Subkriteria</th><th>Rentang/Standar Teknis</th><th>Status</th><th style="width:70px">Aksi</th></tr>
+            </thead>
+            <tbody>
+              {% for x in group %}
+              <tr>
+                <td><span class="score-cell score-{{ x.score|int }}">{{ x.score|int }}</span></td>
+                <td><strong>{{ x.name }}</strong></td>
+                <td>{{ x.technical_range }}</td>
+                <td><span class="badge {{ '' if x.is_active else 'off' }}">{{ 'Aktif' if x.is_active else 'Nonaktif' }}</span></td>
+                <td><a class="button secondary small-btn" href="{{ url_for('master.subcriteria', edit=x.id) }}">Edit</a></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="empty compact">Belum ada subkriteria untuk {{ c.code }}.</div>
+        {% endif %}
+      </div>
+    </details>
+    {% endfor %}
+    <div class="empty" id="searchEmpty" hidden>Tidak ada data yang sesuai dengan pencarian.</div>
+  </div>
+</section>
+
+<dialog class="form-dialog" id="subcriterionModal">
+  <form method="post" class="dialog-card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="id" value="{{ edited.id if edited else '' }}">
+    <header class="dialog-header">
+      <div><h2>{{ 'Edit Subkriteria' if edited else 'Tambah Subkriteria' }}</h2><p class="muted small">Isi data sesuai hasil validasi pakar.</p></div>
+      <button class="icon-button close-dialog" type="button" aria-label="Tutup"><i data-lucide="x"></i></button>
+    </header>
+    <div class="dialog-body">
+      <div class="field">
+        <label for="criterion_id">Kriteria induk <span class="required">*</span></label>
+        <select id="criterion_id" name="criterion_id" required>
+          <option value="" disabled {% if not edited %}selected{% endif %}>Pilih kriteria</option>
+          {% for c in criteria %}<option value="{{ c.id }}" {% if edited and edited.criterion_id == c.id %}selected{% endif %}>{{ c.code }} — {{ c.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="name">Nama subkriteria <span class="required">*</span></label>
+        <input id="name" name="name" maxlength="120" required placeholder="Contoh: Sangat sesuai" value="{{ edited.name if edited else '' }}">
+      </div>
+      <div class="field">
+        <label for="technical_range">Rentang/standar teknis <span class="required">*</span></label>
+        <input id="technical_range" name="technical_range" maxlength="191" required placeholder="Contoh: 1.200–3.000 mdpl" value="{{ edited.technical_range if edited else '' }}">
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="score">Skor <span class="required">*</span></label><select id="score" name="score" required><option value="" disabled {% if not edited %}selected{% endif %}>Pilih skor</option>{% for number in range(1, 6) %}<option value="{{ number }}" {% if edited and edited.score|float == number %}selected{% endif %}>{{ number }}</option>{% endfor %}</select></div>
+        <div class="field"><label for="display_order">Urutan tampil</label><input id="display_order" type="number" min="0" name="display_order" value="{{ edited.display_order if edited else 0 }}"></div>
+      </div>
+      <label class="checkbox"><input type="checkbox" name="is_active" {% if not edited or edited.is_active %}checked{% endif %}> Aktif dan dapat digunakan</label>
+    </div>
+    <footer class="dialog-footer">
+      <button class="button secondary close-dialog" type="button">Batal</button>
+      <button class="button" type="submit"><i data-lucide="save"></i>{{ 'Simpan Perubahan' if edited else 'Simpan' }}</button>
+    </footer>
+  </form>
+</dialog>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const modal=document.getElementById('subcriterionModal');
+document.getElementById('openSubcriterionModal')?.addEventListener('click',()=>modal.showModal());
+document.querySelectorAll('.close-dialog').forEach(button=>button.addEventListener('click',()=>modal.close()));
+modal?.addEventListener('click',event=>{if(event.target===modal)modal.close()});
+{% if edited %}modal.showModal();{% endif %}
+
+const search=document.getElementById('subcriteriaSearch');
+const groups=[...document.querySelectorAll('.criterion-accordion')];
+const empty=document.getElementById('searchEmpty');
+search?.addEventListener('input',()=>{
+  const query=search.value.trim().toLowerCase(); let visible=0;
+  groups.forEach(group=>{
+    const show=!query||group.dataset.search.toLowerCase().includes(query);
+    group.hidden=!show;
+    if(show){visible++;if(query)group.open=true}
+  });
+  empty.hidden=visible!==0;
+});
+</script>
+{% endblock %}

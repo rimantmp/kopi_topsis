@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Login · KopiTopsis{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+  <div class="auth-frame">
+    <section class="auth-visual">
+      <div class="auth-visual-shade"></div>
+      <div class="auth-visual-content">
+        <div class="visual-eyebrow"><span>KOPI ARABIKA</span><span>TANA TORAJA</span></div>
+        <div class="visual-line"></div>
+        <h1>Sistem Rekomendasi<br>Pemilihan Varietas<br>Kopi Arabika<br>di Tana Toraja</h1>
+        <p>Menggabungkan ilmu, data, dan kearifan lokal untuk mendukung keputusan yang lebih baik.</p>
+        <div class="visual-features">
+          <div><span><i data-lucide="leaf"></i></span><strong>Varietas<br>Unggul</strong></div>
+          <div><span><i data-lucide="chart-no-axes-column-increasing"></i></span><strong>Rekomendasi<br>Berbasis Data</strong></div>
+          <div><span><i data-lucide="mountain"></i></span><strong>Untuk Petani<br>dan Masa Depan</strong></div>
+        </div>
+        <div class="visual-tagline">Kopi Toraja,<br><span>lebih dari sekadar rasa.</span></div>
+      </div>
+    </section>
+
+    <section class="auth-form-panel">
+      <div class="auth-top-note"><i data-lucide="bean"></i><span>Dari Tana Toraja<br>untuk Kopi Indonesia</span></div>
+      <div class="auth-form-wrap">
+        <div class="auth-logo">
+          <div class="auth-logo-mark"><i data-lucide="mountain"></i><span></span></div>
+          <strong>TANA TORAJA</strong>
+          <small>ARABICA · PEOPLE · SUSTAINABLE FUTURE</small>
+        </div>
+
+        <div class="auth-heading">
+          <span>Selamat datang di</span>
+          <h2>Sistem Rekomendasi Pemilihan Varietas Kopi Arabika di Tana Toraja</h2>
+          <p>Silakan masuk untuk melanjutkan ke sistem.</p>
+        </div>
+
+        <form method="post" class="auth-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="auth-field">
+            <label for="email">Email</label>
+            <div class="auth-input"><i data-lucide="mail"></i><input id="email" type="email" name="email" required autofocus autocomplete="email" placeholder="nama@email.com"></div>
+          </div>
+          <div class="auth-field">
+            <label for="password">Kata Sandi</label>
+            <div class="auth-input"><i data-lucide="lock-keyhole"></i><input id="password" type="password" name="password" required autocomplete="current-password" placeholder="Masukkan kata sandi"><button id="togglePassword" type="button" aria-label="Tampilkan kata sandi"><i data-lucide="eye"></i></button></div>
+          </div>
+          <label class="auth-remember"><input type="checkbox" name="remember"><span><i data-lucide="check"></i></span>Ingat saya</label>
+          <button class="auth-submit" type="submit"><span>Masuk</span><i data-lucide="arrow-right"></i></button>
+        </form>
+      </div>
+      <footer class="auth-footer">© 2026 Sistem Rekomendasi Pemilihan Varietas Kopi Arabika di Tana Toraja<br><span>Bersama untuk kopi Toraja yang lebih baik</span></footer>
+    </section>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}<script>
+const passwordInput=document.getElementById('password'),togglePassword=document.getElementById('togglePassword');
+togglePassword?.addEventListener('click',()=>{const show=passwordInput.type==='password';passwordInput.type=show?'text':'password';togglePassword.innerHTML=`<i data-lucide="${show?'eye-off':'eye'}"></i>`;togglePassword.setAttribute('aria-label',show?'Sembunyikan kata sandi':'Tampilkan kata sandi');if(window.lucide)lucide.createIcons()});
+</script>{% endblock %}

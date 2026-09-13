@@ -1,0 +1,1 @@
+{% extends 'base.html' %}{% block page_title %}Terjadi Kesalahan{% endblock %}{% block content %}<div class="card empty"><h1>{{ error.code or 500 }}</h1><p>{{ error.description or 'Sistem tidak dapat memproses permintaan.' }}</p><a class="button" href="{{ url_for('main.dashboard') }}">Kembali</a></div>{% endblock %}

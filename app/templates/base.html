@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}KopiTopsis{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/subcriteria.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/criteria.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/varieties.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/recommendation.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/weights.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/scores.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/print-report.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar-fix.css') }}">
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
+</head>
+<body>
+{% if current_user.is_authenticated %}
+  <aside class="sidebar" id="sidebar">
+    <a class="brand" href="{{ url_for('main.dashboard') }}">
+      <span class="brand-mark"><i data-lucide="leaf"></i></span>
+      <span class="brand-copy"><strong>KopiTopsis</strong><small>Kopi Terbaik, Keputusan Tepat</small></span>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Utama</div>
+      <a class="{{ 'active' if request.endpoint == 'main.dashboard' else '' }}" href="{{ url_for('main.dashboard') }}"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></a>
+      {% if current_user.is_admin %}
+      <div class="nav-divider"></div><div class="nav-label">Master Data</div>
+      <a class="{{ 'active' if request.endpoint == 'master.varieties' else '' }}" href="{{ url_for('master.varieties') }}"><i data-lucide="sprout"></i><span>Varietas Kopi</span></a>
+      <a class="{{ 'active' if request.endpoint in ['master.criteria', 'master.criterion_toggle'] else '' }}" href="{{ url_for('master.criteria') }}"><i data-lucide="list-checks"></i><span>Kriteria</span></a>
+      <a class="{{ 'active' if request.endpoint == 'master.subcriteria' else '' }}" href="{{ url_for('master.subcriteria') }}"><i data-lucide="list-tree"></i><span>Subkriteria</span></a>
+      <a class="{{ 'active' if request.endpoint == 'master.weights' else '' }}" href="{{ url_for('master.weights') }}"><i data-lucide="scale"></i><span>Bobot</span></a>
+      <a class="{{ 'active' if request.endpoint == 'master.scores' else '' }}" href="{{ url_for('master.scores') }}"><i data-lucide="table-2"></i><span>Nilai Alternatif</span></a>
+      {% endif %}
+      <div class="nav-divider"></div><div class="nav-label">SPK TOPSIS</div>
+      <a class="{{ 'active' if request.endpoint in ['recommendation.create', 'recommendation.topsis', 'recommendation.topsis_calculate'] else '' }}" href="{{ url_for('recommendation.create') }}"><i data-lucide="sparkles"></i><span>Rekomendasi Baru</span></a>
+      <a class="{{ 'active' if request.endpoint in ['recommendation.history', 'recommendation.result', 'recommendation.topsis_result'] else '' }}" href="{{ url_for('recommendation.history') }}"><i data-lucide="history"></i><span>Riwayat</span></a>
+      {% if current_user.is_admin %}<a class="{{ 'active' if request.endpoint in ['main.reports', 'recommendation.print_result'] else '' }}" href="{{ url_for('main.reports') }}"><i data-lucide="file-text"></i><span>Laporan</span></a>{% endif %}
+      {% if current_user.is_admin %}
+      <div class="nav-divider"></div><div class="nav-label">Manajemen</div>
+      <a class="{{ 'active' if request.endpoint == 'master.users' else '' }}" href="{{ url_for('master.users') }}"><i data-lucide="users"></i><span>Pengguna</span></a>
+      {% endif %}
+    </nav>
+    <div class="sidebar-decoration" aria-hidden="true"></div>
+    <form method="post" action="{{ url_for('auth.logout') }}" class="logout-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="nav-logout"><i data-lucide="log-out"></i><span>Logout</span></button>
+    </form>
+  </aside>
+  <div class="app-shell">
+    <header class="topbar">
+      <button class="icon-button mobile-only" id="menuToggle" aria-label="Buka navigasi"><i data-lucide="menu"></i></button>
+      <div><strong>{% block page_title %}Dashboard{% endblock %}</strong><div class="muted small">Sistem Rekomendasi Arabika Tana Toraja</div></div>
+      <div class="user-pill"><span>{{ current_user.name }}</span><span class="avatar">{{ current_user.name[0]|upper }}</span></div>
+    </header>
+    <main class="content">
+{% else %}
+    <main>
+{% endif %}
+      {% for category, message in get_flashed_messages(with_categories=true) %}
+      <div class="alert {{ category }}">{{ message }}</div>
+      {% endfor %}
+      {% block content %}{% endblock %}
+    </main>
+{% if current_user.is_authenticated %}</div><div class="overlay" id="overlay"></div>{% endif %}
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

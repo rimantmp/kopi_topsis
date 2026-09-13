@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Nilai Alternatif · KopiTopsis{% endblock %}
+{% block page_title %}Nilai Alternatif{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div><h1>Nilai Alternatif</h1><p class="muted">Pilih subkriteria yang sesuai untuk setiap varietas. Skornya akan digunakan dalam TOPSIS.</p></div>
+</div>
+
+<div class="score-guide">
+  <i data-lucide="info"></i>
+  <div><strong>Tidak perlu menghafal arti skor.</strong><span>Setiap pilihan menampilkan skor, nama subkriteria, dan rentang atau standar teknisnya.</span></div>
+</div>
+
+<section class="card score-matrix-card">
+  <div class="table-toolbar">
+    <div><h2>Matriks Penilaian Varietas</h2><p class="muted small">{{ varieties|length }} varietas × {{ criteria|length }} kriteria = {{ varieties|length * criteria|length }} nilai yang harus dilengkapi.</p></div>
+    <div class="completion-badge"><i data-lucide="circle-check"></i><span id="matrixCompletion">0/{{ varieties|length * criteria|length }} terisi</span></div>
+  </div>
+
+  {% if varieties and criteria %}
+  <form method="post" id="scoreMatrixForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="table-wrap score-matrix-wrap">
+      <table class="matrix score-matrix">
+        <thead><tr><th>Varietas</th>{% for c in criteria %}<th><strong>{{ c.code }}</strong><span>{{ c.name }}</span><small>Bobot {{ '%.0f'|format(c.weight|float * 100) }}%</small></th>{% endfor %}</tr></thead>
+        <tbody>
+          {% for v in varieties %}<tr><td><div class="matrix-variety"><span class="variety-avatar"><i data-lucide="sprout"></i></span><span><strong>{{ v.code }}</strong><small>{{ v.name }}</small></span></div></td>
+            {% for c in criteria %}{% set current = score_map.get((v.id, c.id)) %}<td class="score-select-cell">
+              <select class="score-subcriterion" name="score_{{ v.id }}_{{ c.id }}" required aria-label="Nilai {{ v.name }} untuk {{ c.name }}">
+                <option value="">Pilih nilai</option>
+                {% for s in c.subcriteria|sort(attribute='score') if s.is_active %}<option value="{{ s.score }}" data-name="{{ s.name }}" data-range="{{ s.technical_range }}" {% if current is not none and current|float == s.score|float %}selected{% endif %}>{{ s.score|int }} — {{ s.name }} — {{ s.technical_range }}</option>{% endfor %}
+              </select>
+              <div class="score-selection-help"><span class="score-mini">—</span><span class="score-help-text">Belum dipilih</span></div>
+            </td>{% endfor %}
+          </tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="score-matrix-footer"><div class="weight-message" id="matrixMessage"><i data-lucide="alert-circle"></i><span>Lengkapi seluruh nilai sebelum menyimpan.</span></div><button class="button" id="saveMatrix" type="submit" disabled><i data-lucide="save"></i>Simpan & Validasi Data</button></div>
+  </form>
+  {% else %}
+  <div class="empty"><i data-lucide="table-properties"></i><h3>Matriks belum dapat dibuat</h3><p>Aktifkan kriteria dan tambahkan minimal dua varietas terlebih dahulu.</p></div>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}<script>
+const scoreSelects=[...document.querySelectorAll('.score-subcriterion')],matrixCompletion=document.getElementById('matrixCompletion'),matrixMessage=document.getElementById('matrixMessage'),saveMatrix=document.getElementById('saveMatrix');
+function updateScoreMatrix(){let filled=0;scoreSelects.forEach(select=>{const option=select.options[select.selectedIndex],help=select.closest('td').querySelector('.score-selection-help'),badge=help.querySelector('.score-mini'),text=help.querySelector('.score-help-text');if(select.value){filled++;badge.textContent=parseInt(select.value);badge.className=`score-mini score-${parseInt(select.value)}`;text.textContent=`${option.dataset.name} · ${option.dataset.range}`;select.classList.remove('missing')}else{badge.textContent='—';badge.className='score-mini';text.textContent='Belum dipilih';select.classList.add('missing')}});const complete=filled===scoreSelects.length&&scoreSelects.length>0;matrixCompletion.textContent=`${filled}/${scoreSelects.length} terisi`;saveMatrix.disabled=!complete;matrixMessage.classList.toggle('valid',complete);matrixMessage.querySelector('span').textContent=complete?'Semua nilai lengkap dan siap disimpan.':'Lengkapi seluruh nilai sebelum menyimpan.'}
+scoreSelects.forEach(select=>select.addEventListener('change',updateScoreMatrix));updateScoreMatrix();
+</script>{% endblock %}

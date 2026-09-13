@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Rekomendasi Baru · KopiTopsis{% endblock %}
+{% block page_title %}Rekomendasi Baru{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div><h1>Form Rekomendasi</h1><p class="muted">Pilih kondisi yang sesuai untuk memperoleh ranking varietas kopi.</p></div>
+  <a class="button secondary" href="{{ url_for('recommendation.history') }}"><i data-lucide="history"></i>Lihat Riwayat</a>
+</div>
+
+<form method="post" id="recommendationForm">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <section class="card recommendation-location">
+    <div class="location-icon"><i data-lucide="map-pin"></i></div>
+    <div class="location-copy"><label for="location_name">Nama lokasi <span class="muted">(opsional)</span></label><span>Simpan identitas wilayah atau lahan pada riwayat rekomendasi.</span></div>
+    <input id="location_name" name="location_name" maxlength="191" placeholder="Contoh: Lembang Rantepao">
+  </section>
+
+  <section class="card recommendation-card">
+    <div class="recommendation-heading">
+      <div><h2>Kondisi dan Karakteristik</h2><p class="muted small">Seluruh kriteria wajib dipilih sebelum perhitungan dijalankan.</p></div>
+      <div class="completion-badge"><i data-lucide="circle-check"></i><span id="completionText">0/{{ criteria|length }} terisi</span></div>
+    </div>
+
+    {% if criteria %}
+    <div class="table-wrap recommendation-table-wrap">
+      <table class="recommendation-table">
+        <thead><tr><th style="width:75px">Kode</th><th>Kriteria</th><th style="width:90px">Bobot</th><th style="width:42%">Pilih Kondisi</th><th style="width:80px">Skor</th></tr></thead>
+        <tbody>
+          {% for c in criteria %}
+          <tr>
+            <td><span class="criterion-code table-code">{{ c.code }}</span></td>
+            <td><strong>{{ c.name }}</strong>{% if c.unit %}<small>{{ c.unit }}</small>{% endif %}</td>
+            <td><span class="weight-pill">{{ '%.0f'|format(c.weight|float * 100) }}%</span></td>
+            <td>
+              <select class="condition-select" name="input_{{ c.id }}" required aria-label="Kondisi {{ c.name }}">
+                <option value="" data-score="">Pilih kondisi</option>
+                {% for s in c.subcriteria|sort(attribute='display_order') if s.is_active %}<option value="{{ s.id }}" data-score="{{ s.score|int }}">{{ s.name }} — {{ s.technical_range }}</option>{% endfor %}
+              </select>
+            </td>
+            <td><span class="selected-score empty-score">—</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="recommendation-footer">
+      <div class="calculation-note"><i data-lucide="shield-check"></i><span>Perhitungan menggunakan bobot dan nilai alternatif yang telah tersimpan di sistem.</span></div>
+      <button class="button process-button" id="processButton" type="submit" disabled><i data-lucide="calculator"></i><span>Proses Rekomendasi</span></button>
+    </div>
+    {% else %}
+    <div class="empty"><i data-lucide="list-x"></i><h3>Kriteria belum tersedia</h3><p>Hubungi administrator untuk mengaktifkan kriteria terlebih dahulu.</p></div>
+    {% endif %}
+  </section>
+</form>
+
+<div class="processing-overlay" id="processingOverlay" hidden>
+  <div class="processing-card"><span class="spinner"></span><h2>Menghitung rekomendasi</h2><p class="muted">Sistem sedang menjalankan proses TOPSIS…</p></div>
+</div>
+{% endblock %}
+
+{% block scripts %}<script>
+const form=document.getElementById('recommendationForm'),selects=[...document.querySelectorAll('.condition-select')],button=document.getElementById('processButton'),completion=document.getElementById('completionText'),overlay=document.getElementById('processingOverlay');
+function updateRecommendationForm(){let filled=0;selects.forEach(select=>{const score=select.options[select.selectedIndex]?.dataset.score||'',scoreBox=select.closest('tr').querySelector('.selected-score');if(select.value){filled++;scoreBox.textContent=score;scoreBox.className=`selected-score score-${score}`}else{scoreBox.textContent='—';scoreBox.className='selected-score empty-score'}});completion.textContent=`${filled}/${selects.length} terisi`;button.disabled=filled!==selects.length}
+selects.forEach(select=>select.addEventListener('change',updateRecommendationForm));updateRecommendationForm();
+form?.addEventListener('submit',()=>{button.disabled=true;button.querySelector('span').textContent='Menghitung…';overlay.hidden=false});
+</script>{% endblock %}

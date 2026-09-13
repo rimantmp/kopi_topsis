@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Varietas Kopi · KopiTopsis{% endblock %}
+{% block page_title %}Master Varietas Kopi{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div><h1>Varietas Kopi</h1><p class="muted">Kelola alternatif varietas yang digunakan dalam perhitungan TOPSIS.</p></div>
+  <button class="button" type="button" id="openVarietyModal"><i data-lucide="plus"></i>Tambah Varietas</button>
+</div>
+
+<section class="card">
+  <div class="table-toolbar">
+    <div><h2>Daftar Varietas</h2><p class="muted small">{{ items|length }} varietas tersedia dalam sistem.</p></div>
+    <div class="search-box"><i data-lucide="search"></i><input id="varietySearch" type="search" placeholder="Cari kode, nama, atau deskripsi…" aria-label="Cari varietas"></div>
+  </div>
+  <div class="table-wrap">
+    <table id="varietyTable">
+      <thead><tr><th style="width:70px">No.</th><th style="width:110px">Kode</th><th>Nama Varietas</th><th>Deskripsi</th><th style="width:100px">Status</th><th style="width:170px">Aksi</th></tr></thead>
+      <tbody>
+        {% for x in items %}
+        <tr data-search="{{ x.code }} {{ x.name }} {{ x.description or '' }}">
+          <td>{{ loop.index }}</td>
+          <td><span class="variety-code">{{ x.code }}</span></td>
+          <td><div class="variety-name"><span class="variety-avatar"><i data-lucide="sprout"></i></span><strong>{{ x.name }}</strong></div></td>
+          <td><span class="description-cell" title="{{ x.description or 'Tidak ada deskripsi' }}">{{ x.description or '—' }}</span></td>
+          <td><span class="badge {{ '' if x.is_active else 'off' }}">{{ 'Aktif' if x.is_active else 'Nonaktif' }}</span></td>
+          <td><div class="actions"><a class="button secondary small-btn" href="{{ url_for('master.varieties', edit=x.id) }}">Edit</a><form method="post" action="{{ url_for('master.variety_toggle', item_id=x.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button secondary small-btn" type="submit">{{ 'Nonaktifkan' if x.is_active else 'Aktifkan' }}</button></form></div></td>
+        </tr>
+        {% else %}<tr><td colspan="6"><div class="empty"><i data-lucide="sprout"></i><h3>Belum ada varietas</h3><p>Tambahkan data varietas resmi untuk mulai menyusun matriks nilai.</p><button class="button" type="button" onclick="document.getElementById('varietyModal').showModal()">Tambah Varietas</button></div></td></tr>{% endfor %}
+        <tr id="varietyEmpty" hidden><td colspan="6" class="empty">Tidak ada varietas yang sesuai dengan pencarian.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<dialog class="form-dialog" id="varietyModal">
+  <form method="post" class="dialog-card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="id" value="{{ edited.id if edited else '' }}">
+    <header class="dialog-header"><div><h2>{{ 'Edit Varietas' if edited else 'Tambah Varietas' }}</h2><p class="muted small">Masukkan hanya data yang memiliki sumber atau validasi pakar.</p></div><button class="icon-button close-variety-dialog" type="button" aria-label="Tutup"><i data-lucide="x"></i></button></header>
+    <div class="dialog-body">
+      <div class="field"><label for="code">Kode varietas <span class="required">*</span></label><input id="code" name="code" maxlength="30" required readonly value="{{ edited.code if edited else suggested_code }}"><span class="field-help">Dibuat otomatis oleh sistem.</span></div>
+      <div class="field"><label for="name">Nama varietas <span class="required">*</span></label><input id="name" name="name" maxlength="150" required placeholder="Masukkan nama varietas" value="{{ edited.name if edited else '' }}"></div>
+      <div class="field"><label for="description">Deskripsi</label><textarea id="description" name="description" rows="5" maxlength="2000" placeholder="Tuliskan deskripsi singkat berdasarkan sumber yang tervalidasi…">{{ edited.description or '' if edited else '' }}</textarea><div class="textarea-meta"><span class="field-help">Opsional, maksimal 2.000 karakter.</span><span id="descriptionCount">0/2000</span></div></div>
+      <label class="checkbox"><input type="checkbox" name="is_active" {% if not edited or edited.is_active %}checked{% endif %}> Aktif dan disertakan sebagai alternatif TOPSIS</label>
+    </div>
+    <footer class="dialog-footer"><button class="button secondary close-variety-dialog" type="button">Batal</button><button class="button" type="submit"><i data-lucide="save"></i>{{ 'Simpan Perubahan' if edited else 'Simpan' }}</button></footer>
+  </form>
+</dialog>
+{% endblock %}
+
+{% block scripts %}<script>
+const varietyModal=document.getElementById('varietyModal');document.getElementById('openVarietyModal')?.addEventListener('click',()=>varietyModal.showModal());document.querySelectorAll('.close-variety-dialog').forEach(button=>button.addEventListener('click',()=>varietyModal.close()));varietyModal?.addEventListener('click',event=>{if(event.target===varietyModal)varietyModal.close()});{% if edited %}varietyModal.showModal();{% endif %}
+const varietySearch=document.getElementById('varietySearch'),varietyRows=[...document.querySelectorAll('#varietyTable tbody tr[data-search]')],varietyEmpty=document.getElementById('varietyEmpty');varietySearch?.addEventListener('input',()=>{const q=varietySearch.value.trim().toLowerCase();let visible=0;varietyRows.forEach(row=>{const show=!q||row.dataset.search.toLowerCase().includes(q);row.hidden=!show;if(show)visible++});varietyEmpty.hidden=visible!==0});
+const description=document.getElementById('description'),descriptionCount=document.getElementById('descriptionCount');function updateDescriptionCount(){descriptionCount.textContent=`${description.value.length}/2000`}description?.addEventListener('input',updateDescriptionCount);updateDescriptionCount();
+</script>{% endblock %}

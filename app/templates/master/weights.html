@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}Bobot Kriteria · KopiTopsis{% endblock %}
+{% block page_title %}Bobot Kriteria{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div><h1>Bobot Kriteria</h1><p class="muted">Atur tingkat kepentingan setiap kriteria dalam perhitungan TOPSIS.</p></div>
+</div>
+
+<form method="post" id="weightForm">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <section class="weight-summary">
+    <div class="weight-summary-copy"><span class="muted small">TOTAL BOBOT</span><div><strong id="weightTotal">0.00%</strong><span id="weightStatus" class="weight-status">Belum valid</span></div></div>
+    <div class="weight-progress"><span id="weightProgress"></span></div>
+    <div class="weight-target"><span>Target</span><strong>100%</strong></div>
+  </section>
+
+  <section class="card weight-card">
+    <div class="table-toolbar"><div><h2>Distribusi Bobot</h2><p class="muted small">Masukkan bobot dalam persen. Total seluruh kriteria aktif wajib 100%.</p></div><button class="button secondary" id="resetWeights" type="button"><i data-lucide="rotate-ccw"></i>Kembalikan</button></div>
+    {% if items %}
+    <div class="table-wrap"><table class="weight-table"><thead><tr><th style="width:80px">Kode</th><th>Kriteria</th><th style="width:120px">Atribut</th><th style="width:110px">Satuan</th><th style="width:240px">Bobot (%)</th><th style="width:120px">Visual</th></tr></thead><tbody>
+      {% for x in items %}<tr><td><span class="criterion-code table-code">{{ x.code }}</span></td><td><strong>{{ x.name }}</strong></td><td><span class="attribute-badge {{ x.attribute_type }}">{{ x.attribute_type|title }}</span></td><td>{{ x.unit or '—' }}</td><td><div class="weight-input-group"><input class="weight-input" type="number" step="0.01" min="0" max="100" name="weight_{{ x.id }}" value="{{ '%.2f'|format(x.weight|float * 100) }}" data-original="{{ '%.2f'|format(x.weight|float * 100) }}" required><span>%</span></div></td><td><div class="row-weight-bar"><span></span></div></td></tr>{% endfor %}
+    </tbody></table></div>
+    <div class="weight-footer"><div class="weight-message" id="weightMessage"><i data-lucide="info"></i><span>Sesuaikan bobot hingga total mencapai 100%.</span></div><button class="button" id="saveWeight" type="submit" disabled><i data-lucide="save"></i>Simpan Bobot</button></div>
+    {% else %}<div class="empty">Belum ada kriteria aktif yang dapat diberi bobot.</div>{% endif %}
+  </section>
+</form>
+{% endblock %}
+
+{% block scripts %}<script>
+const weightInputs=[...document.querySelectorAll('.weight-input')],weightTotal=document.getElementById('weightTotal'),weightStatus=document.getElementById('weightStatus'),weightProgress=document.getElementById('weightProgress'),weightMessage=document.getElementById('weightMessage'),saveWeight=document.getElementById('saveWeight');
+function updateWeights(){const total=weightInputs.reduce((sum,input)=>sum+(parseFloat(input.value)||0),0),valid=Math.abs(total-100)<0.000001;weightTotal.textContent=`${total.toFixed(2)}%`;weightProgress.style.width=`${Math.min(total,100)}%`;weightProgress.classList.toggle('over',total>100);weightStatus.textContent=valid?'Valid':'Belum valid';weightStatus.classList.toggle('valid',valid);saveWeight.disabled=!valid;weightMessage.classList.toggle('valid',valid);weightMessage.querySelector('span').textContent=valid?'Total bobot sudah tepat 100% dan siap disimpan.':total>100?`Kurangi ${(total-100).toFixed(2)}% agar total menjadi 100%.`:`Tambahkan ${(100-total).toFixed(2)}% agar total menjadi 100%.`;weightInputs.forEach(input=>{const value=Math.max(0,Math.min(parseFloat(input.value)||0,100));input.closest('tr').querySelector('.row-weight-bar span').style.width=`${value}%`})}
+weightInputs.forEach(input=>input.addEventListener('input',updateWeights));document.getElementById('resetWeights')?.addEventListener('click',()=>{weightInputs.forEach(input=>input.value=input.dataset.original);updateWeights()});updateWeights();
+</script>{% endblock %}

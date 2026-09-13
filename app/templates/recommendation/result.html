@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Hasil Rekomendasi · KopiTopsis{% endblock %}
+{% block page_title %}Hasil Rekomendasi{% endblock %}
+
+{% block content %}
+{% if not results %}
+<div class="empty">Hasil belum tersedia.</div>
+{% elif print_mode %}
+  {% include 'recommendation/print_result.html' %}
+{% else %}
+<div class="page-head">
+  <div><h1>Hasil Rekomendasi</h1><p class="muted">Sesi {{ session.id[:8] }} · {{ session.created_at.strftime('%d/%m/%Y %H:%M') }}</p></div>
+  <div class="actions"><a class="button secondary" href="{{ url_for('recommendation.create') }}">Rekomendasi Baru</a><a class="button" href="{{ url_for('recommendation.print_result', session_id=session.id) }}" target="_blank"><i data-lucide="printer"></i>Cetak Laporan</a></div>
+</div>
+<section class="rank-hero"><div class="rank-number">PERINGKAT #1</div><div class="rank-name">{{ results[0].variety.name }}</div><div class="rank-score">{{ '%.4f'|format(results[0].preference_score|float) }}</div><div>Nilai Preferensi TOPSIS</div></section>
+<div class="card" style="margin-top:18px"><h2>Ranking Varietas</h2><div class="table-wrap"><table><thead><tr><th>Rank</th><th>Varietas</th><th>D+</th><th>D−</th><th>Preferensi</th><th>Visual</th></tr></thead><tbody>{% for x in results %}<tr><td><strong>#{{ x.rank_no }}</strong></td><td>{{ x.variety.code }} — {{ x.variety.name }}</td><td>{{ '%.6f'|format(x.distance_positive|float) }}</td><td>{{ '%.6f'|format(x.distance_negative|float) }}</td><td>{{ '%.6f'|format(x.preference_score|float) }}</td><td><div class="progress"><span style="width:{{ x.preference_score|float * 100 }}%"></span></div></td></tr>{% endfor %}</tbody></table></div></div>
+<div class="card" style="margin-top:18px"><h2>Detail Perhitungan</h2><div class="tabs"><button class="tab-button active" data-tab="decision">Matriks Keputusan</button><button class="tab-button" data-tab="normalization">Normalisasi</button><button class="tab-button" data-tab="weighted">Terbobot</button><button class="tab-button" data-tab="ideal">Solusi Ideal</button></div>{% set calc=session.calculation %}<div id="decision" class="tab-panel active"><pre>{{ calc.decision_matrix|tojson(indent=2) }}</pre></div><div id="normalization" class="tab-panel"><pre>{{ calc.normalization_matrix|tojson(indent=2) }}</pre></div><div id="weighted" class="tab-panel"><pre>{{ calc.weighted_matrix|tojson(indent=2) }}</pre></div><div id="ideal" class="tab-panel"><h3>Ideal Positif</h3><pre>{{ calc.positive_ideal|tojson(indent=2) }}</pre><h3>Ideal Negatif</h3><pre>{{ calc.negative_ideal|tojson(indent=2) }}</pre></div></div>
+<div class="alert warning" style="margin-top:18px">Interpretasi hanya berlaku terhadap data, bobot, dan alternatif yang tersimpan pada sesi ini. Verifikasi lapangan tetap diperlukan.</div>
+{% endif %}
+{% endblock %}
