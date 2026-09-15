@@ -16,6 +16,8 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/scores.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/print-report.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/logout.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar-fix.css') }}">
   <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
@@ -40,17 +42,21 @@
       {% endif %}
       <div class="nav-divider"></div><div class="nav-label">SPK TOPSIS</div>
       <a class="{{ 'active' if request.endpoint in ['recommendation.create', 'recommendation.topsis', 'recommendation.topsis_calculate'] else '' }}" href="{{ url_for('recommendation.create') }}"><i data-lucide="sparkles"></i><span>Rekomendasi Baru</span></a>
-      <a class="{{ 'active' if request.endpoint in ['recommendation.history', 'recommendation.result', 'recommendation.topsis_result'] else '' }}" href="{{ url_for('recommendation.history') }}"><i data-lucide="history"></i><span>Riwayat</span></a>
-      {% if current_user.is_admin %}<a class="{{ 'active' if request.endpoint in ['main.reports', 'recommendation.print_result'] else '' }}" href="{{ url_for('main.reports') }}"><i data-lucide="file-text"></i><span>Laporan</span></a>{% endif %}
+      <a class="{{ 'active' if request.endpoint in ['recommendation.history', 'recommendation.result', 'recommendation.topsis_result'] else '' }}" href="{{ url_for('recommendation.history') }}"><i data-lucide="history"></i><span>{{ 'Monitoring' if current_user.is_department_head else 'Riwayat' }}</span></a>
+      {% if current_user.is_admin or current_user.is_department_head %}<a class="{{ 'active' if request.endpoint in ['main.reports', 'recommendation.print_result'] else '' }}" href="{{ url_for('main.reports') }}"><i data-lucide="file-text"></i><span>Laporan</span></a>{% endif %}
+      {% if current_user.is_department_head %}<a class="{{ 'active' if request.endpoint == 'main.farmers' else '' }}" href="{{ url_for('main.farmers') }}"><i data-lucide="users"></i><span>Data Petani</span></a>{% endif %}
+      {% if not current_user.is_admin %}<a class="{{ 'active' if request.endpoint == 'main.references' else '' }}" href="{{ url_for('main.references') }}"><i data-lucide="book-open"></i><span>Data Referensi</span></a>{% endif %}
       {% if current_user.is_admin %}
       <div class="nav-divider"></div><div class="nav-label">Manajemen</div>
-      <a class="{{ 'active' if request.endpoint == 'master.users' else '' }}" href="{{ url_for('master.users') }}"><i data-lucide="users"></i><span>Pengguna</span></a>
+      <a class="{{ 'active' if request.endpoint in ['master.users', 'master.user_toggle'] else '' }}" href="{{ url_for('master.users') }}"><i data-lucide="users"></i><span>Pengguna</span></a>
       {% endif %}
+      <div class="nav-divider"></div><div class="nav-label">Akun</div>
+      <a class="{{ 'active' if request.endpoint == 'main.profile' else '' }}" href="{{ url_for('main.profile') }}"><i data-lucide="circle-user-round"></i><span>Profil Saya</span></a>
     </nav>
     <div class="sidebar-decoration" aria-hidden="true"></div>
-    <form method="post" action="{{ url_for('auth.logout') }}" class="logout-form">
+    <form method="post" action="{{ url_for('auth.logout') }}" class="logout-form" id="logoutForm">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button class="nav-logout"><i data-lucide="log-out"></i><span>Logout</span></button>
+      <button class="nav-logout" type="button" id="openLogoutDialog"><i data-lucide="log-out"></i><span>Logout</span></button>
     </form>
   </aside>
   <div class="app-shell">
@@ -68,7 +74,16 @@
       {% endfor %}
       {% block content %}{% endblock %}
     </main>
-{% if current_user.is_authenticated %}</div><div class="overlay" id="overlay"></div>{% endif %}
+{% if current_user.is_authenticated %}</div><div class="overlay" id="overlay"></div>
+<dialog class="logout-dialog" id="logoutDialog" aria-labelledby="logoutDialogTitle">
+  <div class="logout-dialog-card">
+    <span class="logout-dialog-icon"><i data-lucide="log-out"></i></span>
+    <h2 id="logoutDialogTitle">Konfirmasi Logout</h2>
+    <p>Apakah Anda yakin ingin keluar dari aplikasi?</p>
+    <div class="logout-dialog-actions"><button class="button secondary" type="button" id="cancelLogout">Batal</button><button class="button danger-solid" type="button" id="confirmLogout"><i data-lucide="log-out"></i>Ya, Logout</button></div>
+  </div>
+</dialog>
+{% endif %}
 <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 {% block scripts %}{% endblock %}
 </body>

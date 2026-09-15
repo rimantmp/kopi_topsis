@@ -170,11 +170,40 @@ def scores():
 def users():
     from ..models import Role
     roles = Role.query.order_by(Role.name).all()
+    edit_id = request.args.get("edit", type=int)
+    edited = db.session.get(User, edit_id) if edit_id else None
     if request.method == "POST":
+        user_id = request.form.get("id", type=int)
+        user = db.session.get(User, user_id) if user_id else User()
+        if user is None:
+            flash("Pengguna tidak ditemukan.", "error")
+            return redirect(url_for("master.users"))
         name = request.form.get("name", "").strip(); email = request.form.get("email", "").strip().lower(); password = request.form.get("password", "")
         role = db.session.get(Role, request.form.get("role_id", type=int))
-        if not name or not email or len(password) < 8 or not role: flash("Data tidak valid; kata sandi minimal 8 karakter.", "error")
+        is_active = bool(request.form.get("is_active"))
+        if not name or not email or (password and len(password) < 8) or (not user_id and len(password) < 8) or not role:
+            flash("Data tidak valid; kata sandi pengguna baru minimal 8 karakter.", "error")
+        elif user.id == current_user.id and (not is_active or role.name != "admin"):
+            flash("Akun admin yang sedang digunakan tidak dapat dinonaktifkan atau diubah rolenya.", "error")
         else:
-            user = User(name=name, email=email, role=role); user.set_password(password); db.session.add(user)
-            if commit_or_flash("Pengguna berhasil dibuat."): return redirect(url_for("master.users"))
-    return render_template("master/users.html", items=User.query.order_by(User.name).all(), roles=roles)
+            user.name = name; user.email = email; user.role = role; user.is_active_flag = is_active
+            if password: user.set_password(password)
+            db.session.add(user); db.session.flush()
+            audit("save", "user", user.id, {"name": user.name, "email": user.email, "role": role.name, "is_active": is_active})
+            message = "Pengguna berhasil diperbarui." if user_id else "Pengguna berhasil dibuat."
+            if commit_or_flash(message): return redirect(url_for("master.users"))
+    return render_template("master/users.html", items=User.query.order_by(User.name).all(), roles=roles, edited=edited)
+
+
+@bp.post("/users/<int:item_id>/toggle")
+@login_required
+@admin_required
+def user_toggle(item_id):
+    item = db.get_or_404(User, item_id)
+    if item.id == current_user.id:
+        flash("Akun yang sedang digunakan tidak dapat dinonaktifkan.", "error")
+    else:
+        item.is_active_flag = not item.is_active_flag
+        audit("toggle", "user", item.id, {"is_active": item.is_active_flag})
+        commit_or_flash("Status pengguna diperbarui.")
+    return redirect(url_for("master.users"))

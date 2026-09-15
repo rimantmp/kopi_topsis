@@ -43,6 +43,14 @@ class User(UserMixin, TimestampMixin, db.Model):
     def is_admin(self):
         return self.role and self.role.name == "admin"
 
+    @property
+    def is_farmer(self):
+        return self.role and self.role.name in {"petani", "user"}
+
+    @property
+    def is_department_head(self):
+        return self.role and self.role.name == "kepala_dinas"
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 

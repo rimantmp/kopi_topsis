@@ -12,8 +12,8 @@
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <section class="card recommendation-location">
     <div class="location-icon"><i data-lucide="map-pin"></i></div>
-    <div class="location-copy"><label for="location_name">Nama lokasi <span class="muted">(opsional)</span></label><span>Simpan identitas wilayah atau lahan pada riwayat rekomendasi.</span></div>
-    <input id="location_name" name="location_name" maxlength="191" placeholder="Contoh: Lembang Rantepao">
+    <div class="location-copy"><label for="location_name">Nama lokasi <span class="required">*</span></label><span>Lokasi wajib diisi sebagai identitas wilayah atau lahan rekomendasi.</span></div>
+    <input id="location_name" name="location_name" maxlength="191" required autocomplete="address-level2" placeholder="Contoh: Lembang Rantepao" value="{{ request.form.get('location_name', '') }}">
   </section>
 
   <section class="card recommendation-card">
@@ -60,8 +60,8 @@
 {% endblock %}
 
 {% block scripts %}<script>
-const form=document.getElementById('recommendationForm'),selects=[...document.querySelectorAll('.condition-select')],button=document.getElementById('processButton'),completion=document.getElementById('completionText'),overlay=document.getElementById('processingOverlay');
-function updateRecommendationForm(){let filled=0;selects.forEach(select=>{const score=select.options[select.selectedIndex]?.dataset.score||'',scoreBox=select.closest('tr').querySelector('.selected-score');if(select.value){filled++;scoreBox.textContent=score;scoreBox.className=`selected-score score-${score}`}else{scoreBox.textContent='—';scoreBox.className='selected-score empty-score'}});completion.textContent=`${filled}/${selects.length} terisi`;button.disabled=filled!==selects.length}
-selects.forEach(select=>select.addEventListener('change',updateRecommendationForm));updateRecommendationForm();
+const form=document.getElementById('recommendationForm'),locationInput=document.getElementById('location_name'),selects=[...document.querySelectorAll('.condition-select')],button=document.getElementById('processButton'),completion=document.getElementById('completionText'),overlay=document.getElementById('processingOverlay');
+function updateRecommendationForm(){let filled=0;selects.forEach(select=>{const score=select.options[select.selectedIndex]?.dataset.score||'',scoreBox=select.closest('tr').querySelector('.selected-score');if(select.value){filled++;scoreBox.textContent=score;scoreBox.className=`selected-score score-${score}`}else{scoreBox.textContent='—';scoreBox.className='selected-score empty-score'}});completion.textContent=`${filled}/${selects.length} terisi`;button.disabled=filled!==selects.length||!locationInput.value.trim()}
+selects.forEach(select=>select.addEventListener('change',updateRecommendationForm));locationInput?.addEventListener('input',updateRecommendationForm);updateRecommendationForm();
 form?.addEventListener('submit',()=>{button.disabled=true;button.querySelector('span').textContent='Menghitung…';overlay.hidden=false});
 </script>{% endblock %}

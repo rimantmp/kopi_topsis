@@ -1,2 +1,45 @@
-{% extends 'base.html' %}{% block title %}Pengguna · KopiTopsis{% endblock %}{% block page_title %}Manajemen Pengguna{% endblock %}
-{% block content %}<div class="grid grid-2"><div class="card"><h2>Tambah Pengguna</h2><form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><div class="field"><label>Nama</label><input name="name" required></div><div class="field"><label>Email</label><input type="email" name="email" required></div><div class="field"><label>Kata sandi</label><input type="password" name="password" minlength="8" required></div><div class="field"><label>Role</label><select name="role_id">{% for r in roles %}<option value="{{ r.id }}">{{ r.name|title }}</option>{% endfor %}</select></div><button class="button">Tambah</button></form></div><div class="card"><h2>Daftar Pengguna</h2><div class="table-wrap"><table><thead><tr><th>Nama</th><th>Email</th><th>Role</th><th>Status</th></tr></thead><tbody>{% for x in items %}<tr><td>{{ x.name }}</td><td>{{ x.email }}</td><td>{{ x.role.name }}</td><td><span class="badge">{{ 'Aktif' if x.is_active else 'Nonaktif' }}</span></td></tr>{% endfor %}</tbody></table></div></div></div>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Pengguna · KopiTopsis{% endblock %}
+{% block page_title %}Manajemen Pengguna{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div><h1>Pengguna</h1><p class="muted">Kelola akun, peran, dan akses pengguna KopiTopsis.</p></div>
+  <button class="button" type="button" id="openUserModal"><i data-lucide="user-plus"></i>Tambah Pengguna</button>
+</div>
+<section class="card">
+  <div class="table-toolbar">
+    <div><h2>Daftar Pengguna</h2><p class="muted small">{{ items|length }} pengguna terdaftar dalam sistem.</p></div>
+    <div class="search-box"><i data-lucide="search"></i><input id="userSearch" type="search" placeholder="Cari nama, email, atau role…" aria-label="Cari pengguna"></div>
+  </div>
+  <div class="table-wrap"><table id="userTable">
+    <thead><tr><th style="width:70px">No.</th><th>Nama Pengguna</th><th>Email</th><th style="width:110px">Role</th><th style="width:100px">Status</th><th style="width:170px">Aksi</th></tr></thead>
+    <tbody>
+      {% for x in items %}<tr data-search="{{ x.name }} {{ x.email }} {{ x.role.name }} {{ 'aktif' if x.is_active else 'nonaktif' }}">
+        <td>{{ loop.index }}</td>
+        <td><div class="variety-name"><span class="variety-avatar"><i data-lucide="user"></i></span><strong>{{ x.name }}</strong></div></td>
+        <td>{{ x.email }}</td><td><span class="attribute-badge {{ 'benefit' if x.role.name == 'admin' else '' }}">{{ x.role.name|replace('_', ' ')|title }}</span></td>
+        <td><span class="badge {{ '' if x.is_active else 'off' }}">{{ 'Aktif' if x.is_active else 'Nonaktif' }}</span></td>
+        <td><div class="actions"><a class="button secondary small-btn" href="{{ url_for('master.users', edit=x.id) }}">Edit</a><form method="post" action="{{ url_for('master.user_toggle', item_id=x.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button secondary small-btn" type="submit" {% if x.id == current_user.id %}disabled title="Akun sedang digunakan"{% endif %}>{{ 'Nonaktifkan' if x.is_active else 'Aktifkan' }}</button></form></div></td>
+      </tr>{% else %}<tr><td colspan="6" class="empty">Belum ada pengguna.</td></tr>{% endfor %}
+      <tr id="userEmpty" hidden><td colspan="6" class="empty">Tidak ada pengguna yang sesuai dengan pencarian.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+<dialog class="form-dialog" id="userModal"><form method="post" class="dialog-card">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="id" value="{{ edited.id if edited else '' }}">
+  <header class="dialog-header"><div><h2>{{ 'Edit Pengguna' if edited else 'Tambah Pengguna' }}</h2><p class="muted small">Lengkapi identitas dan hak akses akun.</p></div><button class="icon-button close-user-dialog" type="button" aria-label="Tutup"><i data-lucide="x"></i></button></header>
+  <div class="dialog-body">
+    <div class="field"><label for="name">Nama lengkap <span class="required">*</span></label><input id="name" name="name" maxlength="120" required placeholder="Masukkan nama pengguna" value="{{ edited.name if edited else '' }}"></div>
+    <div class="field"><label for="email">Email <span class="required">*</span></label><input id="email" type="email" name="email" maxlength="191" required placeholder="nama@contoh.com" value="{{ edited.email if edited else '' }}"></div>
+    <div class="field"><label for="password">Kata sandi {% if not edited %}<span class="required">*</span>{% endif %}</label><input id="password" type="password" name="password" minlength="8" {% if not edited %}required{% endif %} autocomplete="new-password" placeholder="Minimal 8 karakter"><span class="field-help">{% if edited %}Kosongkan jika kata sandi tidak ingin diubah.{% else %}Gunakan sedikitnya 8 karakter.{% endif %}</span></div>
+    <div class="field"><label for="role_id">Role <span class="required">*</span></label><select id="role_id" name="role_id" required>{% for r in roles %}<option value="{{ r.id }}" {% if edited and edited.role_id == r.id %}selected{% endif %}>{{ r.name|replace('_', ' ')|title }}</option>{% endfor %}</select></div>
+    <label class="checkbox"><input type="checkbox" name="is_active" {% if not edited or edited.is_active %}checked{% endif %}> Akun aktif dan dapat masuk ke sistem</label>
+  </div>
+  <footer class="dialog-footer"><button class="button secondary close-user-dialog" type="button">Batal</button><button class="button" type="submit"><i data-lucide="save"></i>{{ 'Simpan Perubahan' if edited else 'Simpan' }}</button></footer>
+</form></dialog>
+{% endblock %}
+{% block scripts %}<script>
+const userModal=document.getElementById('userModal');document.getElementById('openUserModal')?.addEventListener('click',()=>userModal.showModal());document.querySelectorAll('.close-user-dialog').forEach(button=>button.addEventListener('click',()=>userModal.close()));userModal?.addEventListener('click',event=>{if(event.target===userModal)userModal.close()});{% if edited %}userModal.showModal();{% endif %}
+const userSearch=document.getElementById('userSearch'),userRows=[...document.querySelectorAll('#userTable tbody tr[data-search]')],userEmpty=document.getElementById('userEmpty');userSearch?.addEventListener('input',()=>{const q=userSearch.value.trim().toLowerCase();let visible=0;userRows.forEach(row=>{const show=!q||row.dataset.search.toLowerCase().includes(q);row.hidden=!show;if(show)visible++});userEmpty.hidden=visible!==0});
+</script>{% endblock %}

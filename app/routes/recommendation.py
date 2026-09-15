@@ -31,9 +31,12 @@ def create():
     criteria = Criterion.query.filter_by(is_active=True).order_by(Criterion.display_order).all()
     if request.method == "POST":
         try:
+            location_name = request.form.get("location_name", "").strip()
+            if not location_name:
+                raise TopsisValidationError("Nama lokasi wajib diisi.")
             calc_criteria, varieties, output = calculation_data()
             snapshot = [{"id": c.id, "code": c.code, "name": c.name, "weight": float(c.weight), "attribute": c.attribute_type} for c in calc_criteria]
-            session = RecommendationSession(user_id=current_user.id, location_name=request.form.get("location_name", "").strip() or None, status="processing", criteria_snapshot=snapshot)
+            session = RecommendationSession(user_id=current_user.id, location_name=location_name, status="processing", criteria_snapshot=snapshot)
             db.session.add(session); db.session.flush()
             for criterion in calc_criteria:
                 sub_id = request.form.get(f"input_{criterion.id}", type=int)
@@ -67,7 +70,7 @@ def topsis_calculate():
 
 def authorized_session(session_id):
     session = db.get_or_404(RecommendationSession, session_id)
-    if not current_user.is_admin and session.user_id != current_user.id:
+    if not (current_user.is_admin or current_user.is_department_head) and session.user_id != current_user.id:
         abort(403)
     return session
 
@@ -90,7 +93,7 @@ def topsis_result(session_id):
 @login_required
 def history():
     query = RecommendationSession.query
-    if not current_user.is_admin:
+    if not (current_user.is_admin or current_user.is_department_head):
         query = query.filter_by(user_id=current_user.id)
     return render_template("recommendation/history.html", sessions=query.order_by(RecommendationSession.created_at.desc()).all())
 

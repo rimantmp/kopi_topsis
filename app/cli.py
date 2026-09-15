@@ -33,7 +33,9 @@ def init_db(admin_email, admin_password, refresh_seed):
     db.create_all()
     admin_role = Role.query.filter_by(name="admin").first() or Role(name="admin", description="Administrator")
     user_role = Role.query.filter_by(name="user").first() or Role(name="user", description="Pengguna")
-    db.session.add_all([admin_role, user_role]); db.session.flush()
+    farmer_role = Role.query.filter_by(name="petani").first() or Role(name="petani", description="Petani kopi")
+    head_role = Role.query.filter_by(name="kepala_dinas").first() or Role(name="kepala_dinas", description="Kepala Dinas Pertanian")
+    db.session.add_all([admin_role, user_role, farmer_role, head_role]); db.session.flush()
     admin = User.query.filter_by(email=admin_email.lower()).first()
     if not admin:
         admin = User(name="Administrator", email=admin_email.lower(), role=admin_role)
