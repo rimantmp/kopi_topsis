@@ -3,7 +3,7 @@ import pytest
 from app import create_app
 from app.config import TestConfig
 from app.extensions import db
-from app.models import Criterion, Role, Subcriterion, User, Variety, VarietyScore
+from app.models import Criterion, Location, Role, Subcriterion, User, Variety, VarietyScore
 
 
 @pytest.fixture()

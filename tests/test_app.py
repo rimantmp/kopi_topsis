@@ -21,12 +21,14 @@ def test_login_page_uses_toraja_split_layout(client):
 
 
 def test_recommendation_full_flow(client, app):
-    from app.models import Criterion
+    from app.models import Criterion, Location
+    from app.extensions import db
     login(client)
     with app.app_context():
         criteria = Criterion.query.order_by(Criterion.display_order).all()
         payload = {f"input_{c.id}": str(c.subcriteria[0].id) for c in criteria}
-    payload["location_name"] = "Lokasi Uji"
+        loc = Location(name="Lokasi Uji"); db.session.add(loc); db.session.commit()
+        payload["location_id"] = str(loc.id)
     response = client.post("/recommendation", data=payload, follow_redirects=True)
     assert response.status_code == 200
     assert b"Hasil Rekomendasi" in response.data
@@ -48,13 +50,14 @@ def test_recommendation_requires_location(client, app):
     from app.models import Criterion, RecommendationSession
     login(client)
     page = client.get("/recommendation")
-    assert b'name="location_name" maxlength="191" required' in page.data
+    assert b'name="location_id" required' in page.data
+    assert b'name="location_name"' not in page.data
     with app.app_context():
         criteria = Criterion.query.order_by(Criterion.display_order).all()
         payload = {f"input_{c.id}": str(c.subcriteria[0].id) for c in criteria}
     response = client.post("/recommendation", data=payload, follow_redirects=True)
     assert response.status_code == 200
-    assert b"Nama lokasi wajib diisi" in response.data
+    assert b"Lokasi wajib dipilih" in response.data
     with app.app_context():
         assert RecommendationSession.query.count() == 0
 
@@ -168,6 +171,36 @@ def test_varieties_page_uses_table_and_modal(client):
     assert b"varietyModal" in response.data
     assert b'value="V001"' in response.data
     assert b"Dibuat otomatis oleh sistem" in response.data
+
+
+def test_locations_page_uses_table_and_modal(client):
+    login(client)
+    response = client.get("/locations")
+    assert response.status_code == 200
+    assert b"locationTable" in response.data
+    assert b"locationSearch" in response.data
+    assert b"locationModal" in response.data
+
+
+def test_location_dropdown_flows_into_recommendation(client, app):
+    from app.extensions import db
+    from app.models import Criterion, Location, RecommendationSession
+    login(client)
+    with app.app_context():
+        loc = Location(name="Lembang Rantepao", description="Kecamatan Rantepao")
+        db.session.add(loc); db.session.commit()
+        criteria = Criterion.query.order_by(Criterion.display_order).all()
+        payload = {f"input_{c.id}": str(c.subcriteria[0].id) for c in criteria}
+        loc_id = loc.id
+    payload["location_id"] = str(loc_id)
+    payload["location_name"] = ""
+    response = client.post("/recommendation", data=payload, follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Hasil Rekomendasi" in response.data
+    with app.app_context():
+        sess = RecommendationSession.query.one()
+        assert sess.location_id == loc_id
+        assert sess.location_name == "Lembang Rantepao"
 
 
 def test_recommendation_page_uses_simple_table_form(client):

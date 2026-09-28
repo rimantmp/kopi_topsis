@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/subcriteria.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/criteria.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/varieties.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/locations.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/recommendation.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/weights.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/scores.css') }}">
@@ -35,6 +36,7 @@
       {% if current_user.is_admin %}
       <div class="nav-divider"></div><div class="nav-label">Master Data</div>
       <a class="{{ 'active' if request.endpoint == 'master.varieties' else '' }}" href="{{ url_for('master.varieties') }}"><i data-lucide="sprout"></i><span>Varietas Kopi</span></a>
+      <a class="{{ 'active' if request.endpoint in ['master.locations', 'master.location_toggle'] else '' }}" href="{{ url_for('master.locations') }}"><i data-lucide="map-pin"></i><span>Lokasi</span></a>
       <a class="{{ 'active' if request.endpoint in ['master.criteria', 'master.criterion_toggle'] else '' }}" href="{{ url_for('master.criteria') }}"><i data-lucide="list-checks"></i><span>Kriteria</span></a>
       <a class="{{ 'active' if request.endpoint == 'master.subcriteria' else '' }}" href="{{ url_for('master.subcriteria') }}"><i data-lucide="list-tree"></i><span>Subkriteria</span></a>
       <a class="{{ 'active' if request.endpoint == 'master.weights' else '' }}" href="{{ url_for('master.weights') }}"><i data-lucide="scale"></i><span>Bobot</span></a>

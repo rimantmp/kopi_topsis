@@ -33,7 +33,7 @@
         <span class="criterion-code">{{ c.code }}</span>
         <span class="accordion-name">
           <strong>{{ c.name }}</strong>
-          <small>{{ group|length }} subkriteria{% if c.unit %} · {{ c.unit }}{% endif %}</small>
+          <small>{{ group|length }} subkriteria{% if c.unit %} · {{ c.unit }}{% if unit_description(c.unit) %} <span class="muted">({{ unit_description(c.unit) }})</span>{% endif %}{% endif %}</small>
         </span>
         <span class="badge">Bobot {{ '%.0f'|format(c.weight|float * 100) }}%</span>
         <i class="chevron" data-lucide="chevron-down"></i>

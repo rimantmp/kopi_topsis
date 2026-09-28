@@ -93,6 +93,14 @@ class Variety(TimestampMixin, db.Model):
     scores = db.relationship("VarietyScore", backref="variety", cascade="all, delete-orphan")
 
 
+class Location(TimestampMixin, db.Model):
+    __tablename__ = "locations"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(191), unique=True, nullable=False)
+    description = db.Column(db.Text)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+
+
 class VarietyScore(TimestampMixin, db.Model):
     __tablename__ = "variety_scores"
     __table_args__ = (UniqueConstraint("variety_id", "criterion_id"),)
@@ -108,6 +116,7 @@ class RecommendationSession(db.Model):
     __tablename__ = "recommendation_sessions"
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    location_id = db.Column(db.Integer, db.ForeignKey("locations.id"), nullable=True, index=True)
     location_name = db.Column(db.String(191))
     status = db.Column(db.String(20), nullable=False, default="processing")
     model_version = db.Column(db.String(50), nullable=False, default="TOPSIS-1.0")
@@ -115,6 +124,7 @@ class RecommendationSession(db.Model):
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False, index=True)
     completed_at = db.Column(db.DateTime)
     user = db.relationship("User", backref="recommendation_sessions")
+    location = db.relationship("Location")
     inputs = db.relationship("RecommendationInput", backref="session", cascade="all, delete-orphan")
     results = db.relationship("RecommendationResult", backref="session", cascade="all, delete-orphan")
     calculation = db.relationship("TopsisCalculation", backref="session", uselist=False, cascade="all, delete-orphan")

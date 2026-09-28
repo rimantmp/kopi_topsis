@@ -2,7 +2,7 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, u
 from flask_login import current_user, login_required
 
 from ..extensions import db
-from ..models import (Criterion, RecommendationInput, RecommendationResult,
+from ..models import (Criterion, Location, RecommendationInput, RecommendationResult,
                       RecommendationSession, TopsisCalculation, Variety,
                       VarietyScore, utcnow)
 from ..services.topsis_service import TopsisValidationError, calculate_topsis
@@ -29,14 +29,17 @@ def calculation_data():
 @login_required
 def create():
     criteria = Criterion.query.filter_by(is_active=True).order_by(Criterion.display_order).all()
+    locations = Location.query.filter_by(is_active=True).order_by(Location.name).all()
     if request.method == "POST":
         try:
-            location_name = request.form.get("location_name", "").strip()
-            if not location_name:
-                raise TopsisValidationError("Nama lokasi wajib diisi.")
+            location_id = request.form.get("location_id", type=int)
+            location = db.session.get(Location, location_id) if location_id else None
+            if not location:
+                raise TopsisValidationError("Lokasi wajib dipilih.")
+            location_name = location.name
             calc_criteria, varieties, output = calculation_data()
             snapshot = [{"id": c.id, "code": c.code, "name": c.name, "weight": float(c.weight), "attribute": c.attribute_type} for c in calc_criteria]
-            session = RecommendationSession(user_id=current_user.id, location_name=location_name, status="processing", criteria_snapshot=snapshot)
+            session = RecommendationSession(user_id=current_user.id, location_id=location.id, location_name=location_name, status="processing", criteria_snapshot=snapshot)
             db.session.add(session); db.session.flush()
             for criterion in calc_criteria:
                 sub_id = request.form.get(f"input_{criterion.id}", type=int)
@@ -53,7 +56,7 @@ def create():
             db.session.rollback(); flash(str(exc), "error")
         except Exception:
             db.session.rollback(); raise
-    return render_template("recommendation/form.html", criteria=criteria)
+    return render_template("recommendation/form.html", criteria=criteria, locations=locations)
 
 
 @bp.get("/topsis")

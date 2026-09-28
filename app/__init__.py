@@ -7,6 +7,23 @@ from .config import Config
 from .extensions import csrf, db, login_manager, migrate
 
 
+UNIT_DESCRIPTIONS = {
+    "mdpl": "meter di atas permukaan laut",
+    "°c": "derajat Celsius",
+    "mm/tahun": "milimeter per tahun",
+    "kg/ha/tahun": "kilogram per hektare per tahun",
+    "skor": "skor penilaian",
+}
+
+
+def unit_description(unit):
+    if not unit:
+        return None
+    # MySQL lama bisa menyimpan "°C" sebagai "�C" (karakter replacement).
+    key = unit.strip().lower().replace("�", "°")
+    return UNIT_DESCRIPTIONS.get(key)
+
+
 def create_app(config_object=Config):
     load_dotenv()
     app = Flask(__name__, instance_relative_config=True)
@@ -32,6 +49,10 @@ def create_app(config_object=Config):
     @login_manager.user_loader
     def load_user(user_id):
         return db.session.get(User, int(user_id))
+
+    @app.context_processor
+    def inject_helpers():
+        return {"unit_description": unit_description}
 
     @app.errorhandler(400)
     @app.errorhandler(403)

@@ -5,7 +5,7 @@ from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
 
 from ..extensions import db
-from ..models import AuditLog, Criterion, Subcriterion, User, Variety, VarietyScore
+from ..models import AuditLog, Criterion, Location, Subcriterion, User, Variety, VarietyScore
 from ..utils import admin_required
 
 bp = Blueprint("master", __name__)
@@ -137,6 +137,35 @@ def variety_toggle(item_id):
     item = db.get_or_404(Variety, item_id); item.is_active = not item.is_active
     audit("toggle", "variety", item.id, {"is_active": item.is_active}); commit_or_flash("Status varietas diperbarui.")
     return redirect(url_for("master.varieties"))
+
+
+@bp.route("/locations", methods=["GET", "POST"])
+@login_required
+@admin_required
+def locations():
+    edit_id = request.args.get("edit", type=int); edited = db.session.get(Location, edit_id) if edit_id else None
+    if request.method == "POST":
+        item = db.session.get(Location, request.form.get("id", type=int)) if request.form.get("id") else Location()
+        item.name = request.form.get("name", "").strip()
+        item.description = request.form.get("description", "").strip() or None
+        item.is_active = bool(request.form.get("is_active"))
+        if not item.name: flash("Nama lokasi wajib diisi.", "error")
+        else:
+            db.session.add(item); db.session.flush(); audit("save", "location", item.id, {"name": item.name})
+            if commit_or_flash(): return redirect(url_for("master.locations"))
+    query = request.args.get("q", "").strip()
+    items_query = Location.query
+    if query: items_query = items_query.filter(Location.name.contains(query) | Location.description.contains(query))
+    return render_template("master/locations.html", items=items_query.order_by(Location.name).all(), edited=edited, query=query)
+
+
+@bp.post("/locations/<int:item_id>/toggle")
+@login_required
+@admin_required
+def location_toggle(item_id):
+    item = db.get_or_404(Location, item_id); item.is_active = not item.is_active
+    audit("toggle", "location", item.id, {"is_active": item.is_active}); commit_or_flash("Status lokasi diperbarui.")
+    return redirect(url_for("master.locations"))
 
 
 @bp.route("/alternative-scores", methods=["GET", "POST"])

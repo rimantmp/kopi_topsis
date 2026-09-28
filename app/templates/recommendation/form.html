@@ -12,8 +12,14 @@
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <section class="card recommendation-location">
     <div class="location-icon"><i data-lucide="map-pin"></i></div>
-    <div class="location-copy"><label for="location_name">Nama lokasi <span class="required">*</span></label><span>Lokasi wajib diisi sebagai identitas wilayah atau lahan rekomendasi.</span></div>
-    <input id="location_name" name="location_name" maxlength="191" required autocomplete="address-level2" placeholder="Contoh: Lembang Rantepao" value="{{ request.form.get('location_name', '') }}">
+    <div class="location-copy">
+      <label for="location_id">Lokasi <span class="required">*</span></label>
+      <span>Pilih lokasi yang telah ditambahkan pada menu master Lokasi.</span>
+    </div>
+    <select class="location-select" id="location_id" name="location_id" required aria-label="Pilih lokasi">
+      <option value="">— Pilih lokasi —</option>
+      {% for loc in locations %}<option value="{{ loc.id }}">{{ loc.name }}</option>{% endfor %}
+    </select>
   </section>
 
   <section class="card recommendation-card">
@@ -30,7 +36,7 @@
           {% for c in criteria %}
           <tr>
             <td><span class="criterion-code table-code">{{ c.code }}</span></td>
-            <td><strong>{{ c.name }}</strong>{% if c.unit %}<small>{{ c.unit }}</small>{% endif %}</td>
+            <td><strong>{{ c.name }}</strong>{% if c.unit %}<small>{{ c.unit }}{% if unit_description(c.unit) %} — {{ unit_description(c.unit) }}{% endif %}</small>{% endif %}</td>
             <td><span class="weight-pill">{{ '%.0f'|format(c.weight|float * 100) }}%</span></td>
             <td>
               <select class="condition-select" name="input_{{ c.id }}" required aria-label="Kondisi {{ c.name }}">
@@ -60,8 +66,9 @@
 {% endblock %}
 
 {% block scripts %}<script>
-const form=document.getElementById('recommendationForm'),locationInput=document.getElementById('location_name'),selects=[...document.querySelectorAll('.condition-select')],button=document.getElementById('processButton'),completion=document.getElementById('completionText'),overlay=document.getElementById('processingOverlay');
-function updateRecommendationForm(){let filled=0;selects.forEach(select=>{const score=select.options[select.selectedIndex]?.dataset.score||'',scoreBox=select.closest('tr').querySelector('.selected-score');if(select.value){filled++;scoreBox.textContent=score;scoreBox.className=`selected-score score-${score}`}else{scoreBox.textContent='—';scoreBox.className='selected-score empty-score'}});completion.textContent=`${filled}/${selects.length} terisi`;button.disabled=filled!==selects.length||!locationInput.value.trim()}
-selects.forEach(select=>select.addEventListener('change',updateRecommendationForm));locationInput?.addEventListener('input',updateRecommendationForm);updateRecommendationForm();
+const form=document.getElementById('recommendationForm'),locationSelect=document.getElementById('location_id'),selects=[...document.querySelectorAll('.condition-select')],button=document.getElementById('processButton'),completion=document.getElementById('completionText'),overlay=document.getElementById('processingOverlay');
+function locationFilled(){return !!(locationSelect&&locationSelect.value)}
+function updateRecommendationForm(){let filled=0;selects.forEach(select=>{const score=select.options[select.selectedIndex]?.dataset.score||'',scoreBox=select.closest('tr').querySelector('.selected-score');if(select.value){filled++;scoreBox.textContent=score;scoreBox.className=`selected-score score-${score}`}else{scoreBox.textContent='—';scoreBox.className='selected-score empty-score'}});completion.textContent=`${filled}/${selects.length} terisi`;button.disabled=filled!==selects.length||!locationFilled()}
+selects.forEach(select=>select.addEventListener('change',updateRecommendationForm));locationSelect?.addEventListener('change',updateRecommendationForm);updateRecommendationForm();
 form?.addEventListener('submit',()=>{button.disabled=true;button.querySelector('span').textContent='Menghitung…';overlay.hidden=false});
 </script>{% endblock %}
